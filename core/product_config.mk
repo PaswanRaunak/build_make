@@ -384,10 +384,26 @@ PRODUCT_APEX_BOOT_JARS := $(filter-out com.android.i18n:core-icu4j,$(PRODUCT_APE
 # All APEX jars come after /system and /system_ext jars, so adding core-icu4j at the end of the list
 PRODUCT_BOOT_JARS += com.android.i18n:core-icu4j
 
+# Deduplicate boot jars while preserving order (duplicate boot jars cause conflicting ninja install rules)
+_unique_boot_jars :=
+$(foreach j,$(PRODUCT_BOOT_JARS), \
+  $(if $(filter $(_unique_boot_jars),$(j)),, \
+    $(eval _unique_boot_jars += $(j))))
+PRODUCT_BOOT_JARS := $(_unique_boot_jars)
+_unique_boot_jars :=
+
 # The extra system server jars must be appended at the end after common system server jars.
 PRODUCT_SYSTEM_SERVER_JARS += $(PRODUCT_SYSTEM_SERVER_JARS_EXTRA)
 
 PRODUCT_SYSTEM_SERVER_JARS := $(call qualify-platform-jars,$(PRODUCT_SYSTEM_SERVER_JARS))
+
+# Deduplicate system server jars while preserving order
+_unique_system_server_jars :=
+$(foreach j,$(PRODUCT_SYSTEM_SERVER_JARS), \
+  $(if $(filter $(_unique_system_server_jars),$(j)),, \
+    $(eval _unique_system_server_jars += $(j))))
+PRODUCT_SYSTEM_SERVER_JARS := $(_unique_system_server_jars)
+_unique_system_server_jars :=
 
 # Sort APEX boot and system server jars. We use deterministic alphabetical order
 # when constructing BOOTCLASSPATH and SYSTEMSERVERCLASSPATH definition on device
@@ -398,6 +414,13 @@ PRODUCT_APEX_SYSTEM_SERVER_JARS := $(sort $(PRODUCT_APEX_SYSTEM_SERVER_JARS))
 
 PRODUCT_STANDALONE_SYSTEM_SERVER_JARS := \
   $(call qualify-platform-jars,$(PRODUCT_STANDALONE_SYSTEM_SERVER_JARS))
+
+_unique_standalone_system_server_jars :=
+$(foreach j,$(PRODUCT_STANDALONE_SYSTEM_SERVER_JARS), \
+  $(if $(filter $(_unique_standalone_system_server_jars),$(j)),, \
+    $(eval _unique_standalone_system_server_jars += $(j))))
+PRODUCT_STANDALONE_SYSTEM_SERVER_JARS := $(_unique_standalone_system_server_jars)
+_unique_standalone_system_server_jars :=
 
 ifndef PRODUCT_SYSTEM_NAME
   PRODUCT_SYSTEM_NAME := $(PRODUCT_NAME)
